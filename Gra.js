@@ -33,12 +33,23 @@ function preload ()
 //let player;
 let cursors;
 let mario;
-let map;
+
 let goombas;
 let gameOver = false;
 
+let map;
+let tileset;
+let endTile;
+let currentLayer;
+let currentCollider;
+let currentLevelIndex = 0;
+let levels = []
+
+let CONTEXT
+
 function create ()
 {
+    CONTEXT = this
     cursors = this.input.keyboard.createCursorKeys();
     /*player = this.physics.add.sprite(20, 600, 'player');
     player.setScale(0.2);
@@ -46,15 +57,15 @@ function create ()
     player.body.gravity.y = 500;
     this.physics.add.collider(player, platforms);*/
 
-    map = this.make.tilemap({ key: 'map' });
-    let tileset = map.addTilesetImage('bricks', 'bricks-spritesheet');  // set tileset name
-    let layer = map.createLayer('Blocks', tileset, 0, 0);  // set layer name
-    layer.setCollisionByProperty({ collidable: true })
+    levels.push(new Level("Level 1", {x:30, y:400}, null))
+    levels.push(new Level("Level 2", {x:110, y:400}, null))
 
     mario = this.physics.add.sprite(18, 18, 'mario', 'mario-stop.png')
-    mario.setPosition(30, 400)
     mario.body.gravity.y = 500;
-    this.physics.add.collider(mario, layer, checkCollision)
+
+    map = this.make.tilemap({ key: 'map' });
+    tileset = map.addTilesetImage('bricks', 'bricks-spritesheet');
+    loadLayer(currentLevelIndex)
 
     this.anims.create({
         key: 'mario-stop',
@@ -86,7 +97,7 @@ function create ()
     goombas = this.physics.add.group({
         key: 'goomba',
         repeat: 1,
-        setXY:{x:100, y:400, stepX:515, stepY:-100},
+        setXY:{x:200, y:400, stepX:515, stepY:-100},
     });
 
     this.anims.create({
@@ -123,7 +134,7 @@ function create ()
         goomba.setGravityY(500);
       }, this);
 
-    this.physics.add.collider(goombas, layer);
+    this.physics.add.collider(goombas, currentLayer);
     this.physics.add.collider(mario, goombas, null, function ()
     {
         mario.anims.play('mario-lose');
@@ -197,6 +208,10 @@ function update(t, dt) {
         this.cameras.main.stopFollow();
         //MarioDead(mario.y);
     }
+
+    if(isInEnd()) {
+        loadNextLayer()
+    }
 }
 
 function checkCollision(player, obj) {
@@ -209,5 +224,51 @@ function checkCollision(player, obj) {
         // Dodać pokazywanie się punktu nad blokiem
         console.log("spawn point")
         obj.properties.pointBlock = false
+    }
+}
+
+function isInEnd() {
+    var boundsA = mario.getBounds()
+    var boundsB = endTile.getBounds()
+    
+    return Phaser.Geom.Rectangle.Overlaps(boundsA, boundsB);
+}
+
+function setEndTile(layer) {
+    console.log(layer)
+    endTile = layer.layer.data.find(array => array.find(tile => tile.properties.end == true)).find(tile => tile.properties.end == true)
+}
+
+function loadNextLayer() {
+    currentLevelIndex++
+    console.log(`Loading level ${currentLevelIndex+1}`)
+    loadLayer(currentLevelIndex)
+}
+
+function loadLayer(levelIndex) {
+    let lvl = levels[levelIndex]
+    if(!lvl)
+        return
+
+    if(currentLayer) {
+        currentLayer.visible = false
+        map.destroyLayer(currentLayer.layer)
+    }
+    
+    if(currentCollider)
+        CONTEXT.physics.world.removeCollider(currentCollider)
+    
+    currentLayer = map.createLayer(lvl.name, tileset, 0, 0)
+    currentLayer.setCollisionByProperty({ collidable: true })
+    setEndTile(currentLayer)
+    mario.setPosition(lvl.spawnPoint.x, lvl.spawnPoint.y)
+    currentCollider = CONTEXT.physics.add.collider(mario, currentLayer, checkCollision)
+}
+
+class Level {
+    constructor(name, spawnPoint, goombaArray) {
+        this.name = name
+        this.spawnPoint = spawnPoint
+        this.goombaArray = goombaArray // np [ {x: 20, y: 20, minX: 10, maxX: 30} ]
     }
 }
