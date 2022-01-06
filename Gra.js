@@ -44,6 +44,7 @@ let currentLayer;
 let currentCollider;
 let currentLevelIndex = 0;
 let levels = []
+let coins;
 
 let CONTEXT
 
@@ -94,11 +95,9 @@ function create ()
     //mario.anims.play('mario-stop')
     //mario.flipX = true
 
-    goombas = this.physics.add.group({
-        key: 'goomba',
-        repeat: 1,
-        setXY:{x:200, y:400, stepX:515, stepY:-100},
-    });
+    goombas = this.physics.add.group();
+    spawnGoomba(200,400,50,50);
+    spawnGoomba(715,300,50,50);
 
     this.anims.create({
         key: 'goomba-run',
@@ -106,8 +105,6 @@ function create ()
         frameRate:8,
         repeat:-1
     });
-
-
 
     this.anims.create({
         key: 'goomba-dead',
@@ -124,15 +121,16 @@ function create ()
     this.anims.create({
         key: 'flipping-coin',
         frames: this.anims.generateFrameNames('coin', {start: 0, end: 3}),
-        frameRate:8
+        frameRate:8,
+        repeat:-1
     });
 
-    Phaser.Actions.Call(goombas.getChildren(), function(goomba) {
+    /*Phaser.Actions.Call(goombas.getChildren(), function(goomba) {
         goomba.minX = goomba.x-25;
         goomba.maxX = goomba.x+125;
         goomba.speed = 1;
         goomba.setGravityY(500);
-      }, this);
+      }, this);*/
 
     this.physics.add.collider(goombas, currentLayer);
     this.physics.add.collider(mario, goombas, null, function ()
@@ -143,6 +141,7 @@ function create ()
         this.cameras.main.stopFollow();
         //MarioDead(mario.y);
     }, this);
+   coins = this.physics.add.group();
 }
 
 function update(t, dt) {
@@ -221,6 +220,13 @@ function checkCollision(player, obj) {
     }
 
     if(obj.properties.pointBlock && mario.body.onCeiling()) {
+        let coin = coins.create(mario.x, mario.y-17, 'coin');
+        coin.body.gravity.y = 500;
+        coin.setVelocityY(-300);
+        coin.anims.play('flipping-coin');
+        setTimeout(function (){
+            coin.disableBody(true, true);
+        }, 1000)
         // Dodać pokazywanie się punktu nad blokiem
         console.log("spawn point")
         obj.properties.pointBlock = false
@@ -263,6 +269,14 @@ function loadLayer(levelIndex) {
     setEndTile(currentLayer)
     mario.setPosition(lvl.spawnPoint.x, lvl.spawnPoint.y)
     currentCollider = CONTEXT.physics.add.collider(mario, currentLayer, checkCollision)
+}
+
+function spawnGoomba(x, y, leftX, rightX){
+    let goomba = goombas.create(x, y, 'goomba');
+    goomba.minX = x-leftX;
+    goomba.maxX = x+rightX;
+    goomba.speed = 1;
+    goomba.setGravityY(500);
 }
 
 class Level {
