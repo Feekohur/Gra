@@ -28,6 +28,7 @@ function preload ()
     this.load.image('bricks-spritesheet', 'map/bricks-spritesheet.png');
     this.load.spritesheet('coin', 'sheets/Coin2.png', {frameWidth: 16, frameHeight: 16});
     this.load.spritesheet('goomba', 'sheets/Goomba.png', {frameWidth: 18, frameHeight: 18});  
+    //this.load.image('background','map/background.jpg')
 }
 
 //let player;
@@ -46,6 +47,7 @@ let currentLevelIndex = 0;
 let levels = []
 let coins;
 
+let pointCount = 0
 let CONTEXT
 
 function create ()
@@ -58,15 +60,13 @@ function create ()
     player.body.gravity.y = 500;
     this.physics.add.collider(player, platforms);*/
 
-    levels.push(new Level("Level 1", {x:30, y:400}, null))
+    /*let background = this.add.tileSprite(0, -40, 1000, 1000, 'background');
+    background.scale = 0.5
+    background.setOrigin(0)
+    background.setScrollFactor(0);*/
+
+    levels.push(new Level("Level 1", {x:30, y:400}, [{x:200, y:400, leftX:50, rightX:50}, {x:700, y:300, leftX:110, rightX:40}]))
     levels.push(new Level("Level 2", {x:110, y:400}, null))
-
-    mario = this.physics.add.sprite(18, 18, 'mario', 'mario-stop.png')
-    mario.body.gravity.y = 500;
-
-    map = this.make.tilemap({ key: 'map' });
-    tileset = map.addTilesetImage('bricks', 'bricks-spritesheet');
-    loadLayer(currentLevelIndex)
 
     this.anims.create({
         key: 'mario-stop',
@@ -90,14 +90,21 @@ function create ()
         key: 'mario-lose',
         frames: [{ key: 'mario', frame: 'mario-lose.png' }]
     })
-
-    this.cameras.main.startFollow(mario, true, 0.05, 0.05)
+    
     //mario.anims.play('mario-stop')
     //mario.flipX = true
-
     goombas = this.physics.add.group();
-    spawnGoomba(200,400,50,50);
-    spawnGoomba(715,300,50,50);
+    //spawnGoomba(200,400,50,50);
+    //spawnGoomba(715,300,50,50);
+
+    mario = this.physics.add.sprite(18, 18, 'mario', 'mario-stop.png')
+    mario.body.gravity.y = 500;
+
+    map = this.make.tilemap({ key: 'map' });
+    tileset = map.addTilesetImage('bricks', 'bricks-spritesheet');
+    loadLayer(currentLevelIndex)
+
+    this.cameras.main.startFollow(mario, true, 0.05, 0.05)
 
     this.anims.create({
         key: 'goomba-run',
@@ -145,6 +152,10 @@ function create ()
 }
 
 function update(t, dt) {
+    //is level finished
+    if(isInEnd()) {
+        loadNextLayer()
+    }
 
     let group_of_goombas = goombas.getChildren();
     if(gameOver){
@@ -207,10 +218,6 @@ function update(t, dt) {
         this.cameras.main.stopFollow();
         //MarioDead(mario.y);
     }
-
-    if(isInEnd()) {
-        loadNextLayer()
-    }
 }
 
 function checkCollision(player, obj) {
@@ -220,17 +227,24 @@ function checkCollision(player, obj) {
     }
 
     if(obj.properties.pointBlock && mario.body.onCeiling()) {
-        let coin = coins.create(mario.x, mario.y-17, 'coin');
-        coin.body.gravity.y = 500;
+        let coin = coins.create(obj.pixelX+7.5, obj.pixelY-7, 'coin');
+        coin.scale = 0.5
+        coin.body.gravity.y = 1500;
         coin.setVelocityY(-300);
         coin.anims.play('flipping-coin');
-        setTimeout(function (){
+        CONTEXT.physics.add.collider(coin, currentLayer);
+        CONTEXT.physics.add.overlap(mario, coin, collectCoin, null)
+        /*setTimeout(function (){
             coin.disableBody(true, true);
-        }, 1000)
-        // Dodać pokazywanie się punktu nad blokiem
+        }, 400)*/
         console.log("spawn point")
         obj.properties.pointBlock = false
     }
+}
+
+function collectCoin(player, coin) {
+    pointCount++
+    coin.destroy(true)
 }
 
 function isInEnd() {
@@ -263,12 +277,23 @@ function loadLayer(levelIndex) {
     
     if(currentCollider)
         CONTEXT.physics.world.removeCollider(currentCollider)
+
+    if(goombas)
+        clearGoombas()
     
     currentLayer = map.createLayer(lvl.name, tileset, 0, 0)
     currentLayer.setCollisionByProperty({ collidable: true })
     setEndTile(currentLayer)
     mario.setPosition(lvl.spawnPoint.x, lvl.spawnPoint.y)
     currentCollider = CONTEXT.physics.add.collider(mario, currentLayer, checkCollision)
+
+    //spawning goombas
+    if(lvl.goombaArray) {
+        for (let i = 0; i < lvl.goombaArray.length; i++) {
+            const opts = lvl.goombaArray[i];
+            spawnGoomba(opts.x, opts.y, opts.leftX, opts.rightX)
+        }
+    }
 }
 
 function spawnGoomba(x, y, leftX, rightX){
@@ -277,6 +302,14 @@ function spawnGoomba(x, y, leftX, rightX){
     goomba.maxX = x+rightX;
     goomba.speed = 1;
     goomba.setGravityY(500);
+}
+
+function clearGoombas() {
+    let group = goombas.getChildren()
+    for (let i = 0; i < group.length; i++) {
+        const goomba = group[i];
+        goomba.disableBody(true, true)
+    }
 }
 
 class Level {
