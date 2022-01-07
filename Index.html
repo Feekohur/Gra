@@ -2,8 +2,36 @@
 <html>
     <head>
         <script src="phaser.js"></script>
-        <script src="Gra.js"></script>
+        
+        <style>
+            .container {
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 20px;
+                display: flex;
+                border: 2px solid black;
+                border-radius: 5px;
+                width: 1250px;
+                padding: 10px 0;
+            }
+
+            #level, #points {
+                padding: 0 20px;
+            }
+
+            #points {
+                border-left: 2px solid black;
+            }
+        </style>
     </head>
     <body>
+        <div class="game">
+            <canvas id="canvas-element"></canvas>
+        </div>
+        <div class="container">
+            <div id="level">Level 1</div>
+            <div id="points">Points: 0</div>
+        </div>
+
+        <script src="Gra.js"></script>
     </body>
 </html>

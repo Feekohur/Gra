@@ -1,8 +1,9 @@
 var config = {
-    type: Phaser.AUTO,
+    type: Phaser.CANVAS,
     width: 500,
-    height: 270,
+    height: 260,
     backgroundColor: "000",
+    canvas: document.getElementById('canvas-element'),
     scene: {
         preload: preload,
         create: create,
@@ -50,8 +51,14 @@ let coins;
 let pointCount = 0
 let CONTEXT
 
+let levelText = document.getElementById('level')
+let pointsText = document.getElementById('points')
+
 function create ()
 {
+    pointsText.innerHTML = `Points: ${pointCount}`
+    levelText.innerHTML = `Level ${currentLevelIndex+1}`
+
     CONTEXT = this
     cursors = this.input.keyboard.createCursorKeys();
     /*player = this.physics.add.sprite(20, 600, 'player');
@@ -223,7 +230,6 @@ function update(t, dt) {
 function checkCollision(player, obj) {
     if(obj.properties.breakable && mario.body.onCeiling()){
         map.removeTile(obj)
-        console.log(obj)
     }
 
     if(obj.properties.pointBlock && mario.body.onCeiling()) {
@@ -237,13 +243,13 @@ function checkCollision(player, obj) {
         /*setTimeout(function (){
             coin.disableBody(true, true);
         }, 400)*/
-        console.log("spawn point")
         obj.properties.pointBlock = false
     }
 }
 
 function collectCoin(player, coin) {
     pointCount++
+    pointsText.innerHTML = `Points: ${pointCount}`
     coin.destroy(true)
 }
 
@@ -255,14 +261,13 @@ function isInEnd() {
 }
 
 function setEndTile(layer) {
-    console.log(layer)
     endTile = layer.layer.data.find(array => array.find(tile => tile.properties.end == true)).find(tile => tile.properties.end == true)
 }
 
 function loadNextLayer() {
     currentLevelIndex++
-    console.log(`Loading level ${currentLevelIndex+1}`)
     loadLayer(currentLevelIndex)
+    levelText.innerHTML = `Level ${currentLevelIndex+1}`
 }
 
 function loadLayer(levelIndex) {
