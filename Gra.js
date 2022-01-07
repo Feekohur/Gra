@@ -146,16 +146,7 @@ function create ()
         goomba.setGravityY(500);
       }, this);*/
 
-    this.physics.add.collider(goombas, currentLayer);
-    this.physics.add.collider(mario, goombas, null, function ()
-    {
-        mario.anims.play('mario-lose');
-        this.physics.pause();
-        gameOver = true;
-        this.cameras.main.stopFollow();
-        //MarioDead(mario.y);
-    }, this);
-   coins = this.physics.add.group();
+    coins = this.physics.add.group();
 }
 
 function update(t, dt) {
@@ -307,6 +298,18 @@ function spawnGoomba(x, y, leftX, rightX){
     goomba.maxX = x+rightX;
     goomba.speed = 1;
     goomba.setGravityY(500);
+    CONTEXT.physics.add.collider(goomba, currentLayer);
+    CONTEXT.physics.add.collider(mario, goomba, function (m, g)
+    {
+        if(g.body.touching.up) {
+            g.disableBody(true, true)
+        }
+        else {
+            loseGame()
+        }
+        
+        //MarioDead(mario.y);
+    });
 }
 
 function clearGoombas() {
@@ -315,6 +318,13 @@ function clearGoombas() {
         const goomba = group[i];
         goomba.disableBody(true, true)
     }
+}
+
+function loseGame() {
+    mario.anims.play('mario-lose');
+    CONTEXT.physics.pause();
+    gameOver = true;
+    CONTEXT.cameras.main.stopFollow();
 }
 
 class Level {
