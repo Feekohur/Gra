@@ -239,9 +239,13 @@ function checkCollision(player, obj) {
 }
 
 function collectCoin(player, coin) {
+    addPoint()
+    coin.destroy(true)
+}
+
+function addPoint() {
     pointCount++
     pointsText.innerHTML = `Points: ${pointCount}`
-    coin.destroy(true)
 }
 
 function isInEnd() {
