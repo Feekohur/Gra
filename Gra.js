@@ -28,8 +28,10 @@ function preload ()
     this.load.tilemapTiledJSON('map', 'map/mapa.json');
     this.load.image('bricks-spritesheet', 'map/bricks-spritesheet.png');
     this.load.spritesheet('coin', 'sheets/Coin2.png', {frameWidth: 16, frameHeight: 16});
-    this.load.spritesheet('goomba', 'sheets/Goomba.png', {frameWidth: 18, frameHeight: 18});  
-    //this.load.image('background','map/background.jpg')
+    this.load.spritesheet('goomba', 'sheets/Goomba.png', {frameWidth: 18, frameHeight: 18});
+    this.load.spritesheet('fireBlock', 'sheets/TheFireBlock.png', {frameWidth: 16, frameHeight: 16});
+    this.load.spritesheet('fireSprite', 'sheets/FireSprite-8x8.png', {frameWidth: 8, frameHeight: 8});  
+    this.load.image('background','sheets/background.png')
 }
 
 //let player;
@@ -47,6 +49,8 @@ let currentCollider;
 let currentLevelIndex = 0;
 let levels = []
 let coins;
+let group;
+let fireBlocks;
 
 let pointCount = 0
 let CONTEXT
@@ -67,10 +71,9 @@ function create ()
     player.body.gravity.y = 500;
     this.physics.add.collider(player, platforms);*/
 
-    /*let background = this.add.tileSprite(0, -40, 1000, 1000, 'background');
-    background.scale = 0.5
-    background.setOrigin(0)
-    background.setScrollFactor(0);*/
+    let background = this.add.image(0, 0,'background');
+    background.setOrigin(0);
+    background.setScrollFactor(0);
 
     levels.push(new Level("Level 1", {x:30, y:400}, [{x:200, y:400, leftX:50, rightX:50}, {x:700, y:300, leftX:110, rightX:40}]))
     levels.push(new Level("Level 2", {x:110, y:400}, null))
@@ -147,6 +150,21 @@ function create ()
       }, this);*/
 
     coins = this.physics.add.group();
+
+    fireBlocks = this.physics.add.staticGroup();
+    /*fireBlocks.create(500, 500, 'fireBlock');
+    this.anims.create({
+        key: 'spinning-fire',
+        frames: this.anims.generateFrameNames('fireSprite', {start: 0, end: 3}),
+        frameRate:8,
+        repeat: -1
+    });
+    const line = new Phaser.Geom.Line(500, 500, 500, 400);
+    group = this.physics.add.group({ key: 'fireSprite', frameQuantity: 13 });
+    Phaser.Actions.PlaceOnLine(group.getChildren(), line);
+    this.physics.add.collider(mario, group, loseGame, null, this);*/
+
+    spawnFireBar(500, 500, 13);
 }
 
 function update(t, dt) {
@@ -190,6 +208,11 @@ function update(t, dt) {
     if(cursors.up.isDown && mario.body.onFloor()){ 
         mario.anims.play('mario-jump', true)
     }
+    //Fire movement
+    for(let i=0; i<group.length; i++){
+        group[i].anims.play('spinning-fire', true);
+    }
+    
     //Goombas movement
     for(let i=0; i<group_of_goombas.length; i++){
         if(group_of_goombas[i].x>group_of_goombas[i].minX && group_of_goombas[i].x<group_of_goombas[i].maxX){
@@ -306,7 +329,9 @@ function spawnGoomba(x, y, leftX, rightX){
     CONTEXT.physics.add.collider(mario, goomba, function (m, g)
     {
         if(g.body.touching.up) {
-            g.disableBody(true, true)
+            //g.anims.play('goomba-dead');
+            g.disableBody(true, true);
+            
         }
         else {
             loseGame()
@@ -314,6 +339,14 @@ function spawnGoomba(x, y, leftX, rightX){
         
         //MarioDead(mario.y);
     });
+}
+
+function spawnFireBar(x, y, length){
+    fireBlocks.create(x, y, 'fireBlock');
+    const line = new Phaser.Geom.Line(x, y, x, y - length * 8);
+    group = CONTEXT.physics.add.group({ key: 'fireSprite', frameQuantity: length });
+    Phaser.Actions.PlaceOnLine(group.getChildren(), line);
+    CONTEXT.physics.add.collider(mario, group, loseGame);
 }
 
 function clearGoombas() {
