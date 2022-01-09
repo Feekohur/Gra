@@ -53,6 +53,8 @@ let group;
 let fireBlocks;
 let line;
 let fireCollider;
+let line1;
+let graphics;
 
 let pointCount = 0
 let CONTEXT
@@ -64,6 +66,10 @@ function create ()
 {
     pointsText.innerHTML = `Points: ${pointCount}`
     levelText.innerHTML = `Level ${currentLevelIndex+1}`
+
+    graphics = this.add.graphics({ lineStyle: { width: 4, color: 0xaa00aa } });
+
+    line1 = new Phaser.Geom.Line(0, 0, 1000, 500);
 
     CONTEXT = this
     cursors = this.input.keyboard.createCursorKeys();
@@ -154,22 +160,16 @@ function create ()
     coins = this.physics.add.group();
 
     fireBlocks = this.physics.add.staticGroup();
-    /*fireBlocks.create(500, 500, 'fireBlock');
+    fireBlocks.create(500, 500, 'fireBlock');
     this.anims.create({
         key: 'spinning-fire',
         frames: this.anims.generateFrameNames('fireSprite', {start: 0, end: 3}),
         frameRate:8,
         repeat: -1
     });
-    const line = new Phaser.Geom.Line(500, 500, 500, 400);
-    group = this.physics.add.group({ key: 'fireSprite', frameQuantity: 13 });
-    Phaser.Actions.PlaceOnLine(group.getChildren(), line);
-    this.physics.add.collider(mario, group, loseGame, null, this);*/
 
     spawnFireBar(500, 500, 13);
-    /*path = new Phaser.Curves.Path();
-    path.add(new Phaser.Curves.Ellipse(500, 500, 104));
-    graphics = this.add.graphics();*/
+   
 }
 
 function update(t, dt) {
@@ -178,7 +178,14 @@ function update(t, dt) {
         loadNextLayer()
     }
 
+    Phaser.Geom.Line.Rotate(line1, 0.02);
+
+    graphics.clear();
+
+    graphics.strokeLineShape(line1);
+
     let group_of_goombas = goombas.getChildren();
+    let group_of_fire = group.getChildren();
     if(gameOver){
         return;
     }
@@ -214,8 +221,8 @@ function update(t, dt) {
         mario.anims.play('mario-jump', true)
     }
     //Fire movement
-    for(let i=0; i<group.length; i++){
-        group[i].anims.play('spinning-fire', true);
+    for(let i=0; i<group_of_fire.length; i++){
+        group_of_fire[i].anims.play('spinning-fire', true);
     }
     
     //Goombas movement
@@ -244,11 +251,8 @@ function update(t, dt) {
         this.cameras.main.stopFollow();
         loseGame();
     }
-    /*graphics.clear();
-    graphics.lineStyle(2, 0xffffff, 1);
-
-    path.draw(graphics);*/
-    Phaser.Geom.Line.RotateAroundXY(line, 500, 500, 360);
+   
+    Phaser.Actions.RotateAround(group.getChildren(), { x: 500, y: 500 }, 0.05);
 }
 
 function checkCollision(player, obj) {
@@ -339,7 +343,6 @@ function spawnGoomba(x, y, leftX, rightX){
     CONTEXT.physics.add.collider(mario, goomba, function (m, g)
     {
         if(g.body.touching.up) {
-            //g.anims.play('goomba-dead');
             g.disableBody(true, true);
             
         }
@@ -347,7 +350,6 @@ function spawnGoomba(x, y, leftX, rightX){
             loseGame()
         }
         
-        //MarioDead(mario.y);
     });
 }
 
@@ -370,18 +372,25 @@ function clearGoombas() {
 function loseGame() {
     mario.anims.play('mario-lose');
     //CONTEXT.anims.pauseAll();
+    gameOver = true;
     CONTEXT.cameras.main.stopFollow();
+    mario.setVelocityX(0);
+    mario.setVelocityY(-300);
+    mario.setGravityY(500);
     CONTEXT.physics.world.removeCollider(currentCollider);
+    CONTEXT.physics.world.removeCollider(fireCollider);
+    //CONTEXT.physics.pause();
+    /*CONTEXT.physics.world.removeCollider(currentCollider);
     CONTEXT.physics.world.removeCollider(fireCollider);
     mario.setVelocityX(0);
     mario.setVelocityY(-300);
     mario.setGravityY(500);
-    CONTEXT.physics.pause();
-    /*if(mario.y>260){
-        CONTEXT.scene.restart();
-    }*/
-    gameOver = true;
+    CONTEXT.physics.pause();*/
+
+    //setTimeout(CONTEXT.scene.restart(),5000);
 }
+
+//function movingLine();
 
 class Level {
     constructor(name, spawnPoint, goombaArray) {
