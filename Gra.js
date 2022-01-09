@@ -51,6 +51,8 @@ let levels = []
 let coins;
 let group;
 let fireBlocks;
+let line;
+let fireCollider;
 
 let pointCount = 0
 let CONTEXT
@@ -165,6 +167,9 @@ function create ()
     this.physics.add.collider(mario, group, loseGame, null, this);*/
 
     spawnFireBar(500, 500, 13);
+    /*path = new Phaser.Curves.Path();
+    path.add(new Phaser.Curves.Ellipse(500, 500, 104));
+    graphics = this.add.graphics();*/
 }
 
 function update(t, dt) {
@@ -237,8 +242,13 @@ function update(t, dt) {
         this.physics.pause();
         gameOver = true;
         this.cameras.main.stopFollow();
-        //MarioDead(mario.y);
+        loseGame();
     }
+    /*graphics.clear();
+    graphics.lineStyle(2, 0xffffff, 1);
+
+    path.draw(graphics);*/
+    Phaser.Geom.Line.RotateAroundXY(line, 500, 500, 360);
 }
 
 function checkCollision(player, obj) {
@@ -343,10 +353,10 @@ function spawnGoomba(x, y, leftX, rightX){
 
 function spawnFireBar(x, y, length){
     fireBlocks.create(x, y, 'fireBlock');
-    const line = new Phaser.Geom.Line(x, y, x, y - length * 8);
+    line = new Phaser.Geom.Line(x, y, x, y - length * 8);
     group = CONTEXT.physics.add.group({ key: 'fireSprite', frameQuantity: length });
     Phaser.Actions.PlaceOnLine(group.getChildren(), line);
-    CONTEXT.physics.add.collider(mario, group, loseGame);
+    fireCollider = CONTEXT.physics.add.collider(mario, group, loseGame);
 }
 
 function clearGoombas() {
@@ -359,9 +369,18 @@ function clearGoombas() {
 
 function loseGame() {
     mario.anims.play('mario-lose');
-    CONTEXT.physics.pause();
-    gameOver = true;
+    //CONTEXT.anims.pauseAll();
     CONTEXT.cameras.main.stopFollow();
+    CONTEXT.physics.world.removeCollider(currentCollider);
+    CONTEXT.physics.world.removeCollider(fireCollider);
+    mario.setVelocityX(0);
+    mario.setVelocityY(-300);
+    mario.setGravityY(500);
+    CONTEXT.physics.pause();
+    /*if(mario.y>260){
+        CONTEXT.scene.restart();
+    }*/
+    gameOver = true;
 }
 
 class Level {
