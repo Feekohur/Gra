@@ -31,7 +31,8 @@ function preload ()
     this.load.spritesheet('goomba', 'sheets/Goomba.png', {frameWidth: 18, frameHeight: 18});
     this.load.spritesheet('fireBlock', 'sheets/TheFireBlock.png', {frameWidth: 16, frameHeight: 16});
     this.load.spritesheet('fireSprite', 'sheets/FireSprite-8x8.png', {frameWidth: 8, frameHeight: 8});  
-    this.load.image('background','sheets/background.png')
+    this.load.image('background','sheets/background.png');
+    this.load.image('crown', 'sheets/crown.png');
 }
 
 //let player;
@@ -249,10 +250,6 @@ function update(t, dt) {
 
     //Mario losing
     if(mario.y>550){
-        mario.anims.play('mario-lose');
-        this.physics.pause();
-        gameOver = true;
-        this.cameras.main.stopFollow();
         loseGame();
     }
 
@@ -416,6 +413,15 @@ function loseGame() {
     mario.setVelocityX(0);
     mario.setVelocityY(-300);
     mario.setGravityY(500);
+    for(let i=0; i< group.length; i++){
+        const group_of_fire = group[i].getChildren();
+        for (let j = 0; j < group_of_fire.length; j++) {
+            const fire = group_of_fire[j];
+            fire.setVelocityX(0);
+            fire.setVelocityY(0);
+            
+        }
+    }
     CONTEXT.physics.world.removeCollider(currentCollider);
     for (let i = 0; i < fireCollider.length; i++) {
         const collider = fireCollider[i];
