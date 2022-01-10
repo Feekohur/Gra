@@ -49,10 +49,10 @@ let currentCollider;
 let currentLevelIndex = 0;
 let levels = []
 let coins;
-let group;
+let group = [];
 let fireBlocks;
 let line;
-let fireCollider;
+let fireCollider = [];
 let line1;
 let graphics;
 
@@ -83,8 +83,14 @@ function create ()
     background.setOrigin(0);
     background.setScrollFactor(0);
 
-    levels.push(new Level("Level 1", {x:30, y:400}, [{x:200, y:400, leftX:50, rightX:50}, {x:700, y:300, leftX:110, rightX:40}]))
-    levels.push(new Level("Level 2", {x:110, y:400}, null))
+    levels.push(new Level("Level 1", 
+        {x:30, y:400}, 
+        [{x:200, y:400, leftX:50, rightX:50}, {x:700, y:300, leftX:110, rightX:40}],
+        [{x:520, y:180, length:13}, {x:750, y:180, length:13}]))
+    levels.push(new Level("Level 2", 
+        {x:110, y:400}, 
+        null,
+        [{x:505, y:440, length: 12}]))
 
     this.anims.create({
         key: 'mario-stop',
@@ -114,6 +120,7 @@ function create ()
     goombas = this.physics.add.group();
     //spawnGoomba(200,400,50,50);
     //spawnGoomba(715,300,50,50);
+    fireBlocks = this.physics.add.staticGroup();
 
     mario = this.physics.add.sprite(18, 18, 'mario', 'mario-stop.png')
     mario.body.gravity.y = 500;
@@ -159,17 +166,12 @@ function create ()
 
     coins = this.physics.add.group();
 
-    fireBlocks = this.physics.add.staticGroup();
-    fireBlocks.create(500, 500, 'fireBlock');
     this.anims.create({
         key: 'spinning-fire',
         frames: this.anims.generateFrameNames('fireSprite', {start: 0, end: 3}),
         frameRate:8,
         repeat: -1
     });
-
-    spawnFireBar(500, 500, 13);
-   
 }
 
 function update(t, dt) {
@@ -185,7 +187,6 @@ function update(t, dt) {
     graphics.strokeLineShape(line1);
 
     let group_of_goombas = goombas.getChildren();
-    let group_of_fire = group.getChildren();
     if(gameOver){
         return;
     }
@@ -221,8 +222,11 @@ function update(t, dt) {
         mario.anims.play('mario-jump', true)
     }
     //Fire movement
-    for(let i=0; i<group_of_fire.length; i++){
-        group_of_fire[i].anims.play('spinning-fire', true);
+    for (let i = 0; i < group.length; i++) {
+        const group_of_fire = group[i].getChildren();
+        for(let j=0; j<group_of_fire.length; j++){
+            group_of_fire[j].anims.play('spinning-fire', true);
+        }
     }
     
     //Goombas movement
@@ -251,8 +255,13 @@ function update(t, dt) {
         this.cameras.main.stopFollow();
         loseGame();
     }
-   
-    Phaser.Actions.RotateAround(group.getChildren(), { x: 500, y: 500 }, 0.05);
+
+    for (let i = 0; i < group.length; i++) {
+        const group_of_fire = group[i].getChildren();
+        const posX = fireBlocks.getChildren()[i].x
+        const posY = fireBlocks.getChildren()[i].y
+        Phaser.Actions.RotateAround(group_of_fire, { x: posX, y: posY }, 0.05);
+    }
 }
 
 function checkCollision(player, obj) {
@@ -318,6 +327,9 @@ function loadLayer(levelIndex) {
     if(goombas)
         clearGoombas()
     
+    if(group.length > 0)
+        clearFirebars()
+    
     currentLayer = map.createLayer(lvl.name, tileset, 0, 0)
     currentLayer.setCollisionByProperty({ collidable: true })
     setEndTile(currentLayer)
@@ -329,6 +341,13 @@ function loadLayer(levelIndex) {
         for (let i = 0; i < lvl.goombaArray.length; i++) {
             const opts = lvl.goombaArray[i];
             spawnGoomba(opts.x, opts.y, opts.leftX, opts.rightX)
+        }
+    }
+    
+    if(lvl.firebarArray) {
+        for (let i = 0; i < lvl.firebarArray.length; i++) {
+            const opts = lvl.firebarArray[i];
+            spawnFireBar(opts.x, opts.y, opts.length)
         }
     }
 }
@@ -344,21 +363,20 @@ function spawnGoomba(x, y, leftX, rightX){
     {
         if(g.body.touching.up) {
             g.disableBody(true, true);
-            
         }
         else {
             loseGame()
         }
-        
     });
 }
 
 function spawnFireBar(x, y, length){
     fireBlocks.create(x, y, 'fireBlock');
     line = new Phaser.Geom.Line(x, y, x, y - length * 8);
-    group = CONTEXT.physics.add.group({ key: 'fireSprite', frameQuantity: length });
-    Phaser.Actions.PlaceOnLine(group.getChildren(), line);
-    fireCollider = CONTEXT.physics.add.collider(mario, group, loseGame);
+    groupElement = CONTEXT.physics.add.group({ key: 'fireSprite', frameQuantity: length })
+    group.push(groupElement)
+    Phaser.Actions.PlaceOnLine(groupElement.getChildren(), line);
+    fireCollider.push(CONTEXT.physics.add.collider(mario, group, loseGame))
 }
 
 function clearGoombas() {
@@ -366,6 +384,27 @@ function clearGoombas() {
     for (let i = 0; i < group.length; i++) {
         const goomba = group[i];
         goomba.disableBody(true, true)
+    }
+}
+
+function clearFirebars() {
+    let groupFireblocks = fireBlocks.getChildren()
+    for (let i = 0; i < groupFireblocks.length; i++) {
+        const firebar = groupFireblocks[i];
+        firebar.disableBody(true, true)
+    }
+
+    for (let i = 0; i < group.length; i++) {
+        const group_of_fire = group[i].getChildren();
+        for (let j = 0; j < group_of_fire.length; j++) {
+            const fire = group_of_fire[j];
+            fire.disableBody(true, true)
+        }
+    }
+
+    for (let i = 0; i < fireCollider.length; i++) {
+        const collider = fireCollider[i];
+        CONTEXT.physics.world.removeCollider(collider);
     }
 }
 
@@ -378,7 +417,10 @@ function loseGame() {
     mario.setVelocityY(-300);
     mario.setGravityY(500);
     CONTEXT.physics.world.removeCollider(currentCollider);
-    CONTEXT.physics.world.removeCollider(fireCollider);
+    for (let i = 0; i < fireCollider.length; i++) {
+        const collider = fireCollider[i];
+        CONTEXT.physics.world.removeCollider(collider);
+    }
     //CONTEXT.physics.pause();
     /*CONTEXT.physics.world.removeCollider(currentCollider);
     CONTEXT.physics.world.removeCollider(fireCollider);
@@ -393,9 +435,10 @@ function loseGame() {
 //function movingLine();
 
 class Level {
-    constructor(name, spawnPoint, goombaArray) {
+    constructor(name, spawnPoint, goombaArray, firebarArray) {
         this.name = name
         this.spawnPoint = spawnPoint
         this.goombaArray = goombaArray // np [ {x: 20, y: 20, minX: 10, maxX: 30} ]
+        this.firebarArray = firebarArray
     }
 }
